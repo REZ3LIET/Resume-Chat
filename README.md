@@ -21,12 +21,11 @@ To execute this project from the source directory.
 
 ```
 # Linux
-python3 Scripts/qa_chatbot.py
+cd Resume_Chat
+python3 agent/resume_chat.py
 ```
 
 ## License
-
-Specify the license under which your project is distributed. For example:
 
 This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
