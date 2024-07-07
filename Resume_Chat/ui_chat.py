@@ -67,6 +67,7 @@ def main():
     with col1:
         chat_type = st.selectbox("Choose Preferred Chat Option", ["---", "Improve Resume", "Dummy Interview"])
         if st.session_state.agent_type != chat_type:
+            st.session_state.messages = []
             st.session_state.agent_type = chat_type
             if chat_type == "Improve Resume":
                 st.session_state.agent = ResumeAgent("improve", st.session_state.job_desc)
@@ -75,7 +76,7 @@ def main():
             else:
                 st.session_state.agent = None
 
-        chat_start = st.button("Start Chat", on_click=check_start_state)
+        st.button("Start Chat", on_click=check_start_state)
 
     with col2:
         st.session_state.file_status = upload_file()
