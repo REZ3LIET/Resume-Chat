@@ -1,6 +1,10 @@
 # Resume-Chat | [Blog]()
 
-This is a simple implementation of Ollama with Langchain to develop a personalized chatbot with Q&A and chat history.
+Resum Chat helps in interacting with your resume in 2 modes:
+- Improve Resume:
+    In Improve Resume the agent rates your resume and suggests improvement based on the provides job summary.
+- Dummy Interview
+    In Dummy Interview the agent will ask you questions based on you resume similar to an interview setting.
 
 ## Table of Contents
 
@@ -22,7 +26,7 @@ To execute this project from the source directory.
 ```
 # Linux
 cd Resume_Chat
-python3 agent/resume_chat.py
+streamlit run ui_chat.py
 ```
 
 ## License
