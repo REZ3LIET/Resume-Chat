@@ -13,7 +13,7 @@ def interview():
 def upload_file():
     resume = st.file_uploader("Choose a PDF file", type="pdf", accept_multiple_files=False)
     if resume is not None:
-        with open("./resume/resume.pdf", mode='wb') as w:
+        with open("./Resume_Chat/resume/resume.pdf", mode='wb') as w:
             w.write(resume.getvalue())
         return True
     return False
