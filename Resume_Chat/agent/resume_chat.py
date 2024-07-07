@@ -41,7 +41,7 @@ class ResumeAgent:
             self.chat_history[session_id] = ChatMessageHistory()
         return self.chat_history[session_id]
     
-    def data_loader(self, path="./resume/resume.pdf"):
+    def data_loader(self, path="./Resume_Chat/resume/resume.pdf"):
         loader = PyMuPDFLoader(path)
         data = loader.load_and_split()
         embeds = embeddings.OllamaEmbeddings(model='nomic-embed-text')
