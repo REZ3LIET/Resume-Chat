@@ -17,7 +17,17 @@ Resum Chat helps in interacting with your resume in 2 modes:
 ```
 pip install -r requirements.txt
 ```
-2. To setup Ollama and LLama2 refer [Ollama Github](https://github.com/ollama/ollama)
+2. Install Ollama from [Ollama Github](https://github.com/ollama/ollama)
+
+3. Pulling Llama2 for llm
+```
+ollama pull llama2
+```
+
+4. Pulling Embeddings from Ollama
+```
+ollama pull nomic-embed-text
+```
 
 ## Usage
 
@@ -25,8 +35,7 @@ To execute this project from the source directory.
 
 ```
 # Linux
-cd Resume_Chat
-streamlit run ui_chat.py
+streamlit run Resume_Chat/ui_chat.py
 ```
 
 ## License
