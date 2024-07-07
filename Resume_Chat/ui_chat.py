@@ -1,14 +1,6 @@
 import streamlit as st
 from agent.resume_chat import ResumeAgent
-
-def choose_agent():
-    pass
-
-def improve_resume():
-    pass
-
-def interview():
-    pass
+from agent.install_ollama import install_ollama
 
 def upload_file():
     resume = st.file_uploader("Choose a PDF file", type="pdf", accept_multiple_files=False)
@@ -50,9 +42,16 @@ def main():
 
     if "agent" not in st.session_state:
         st.session_state.agent = None
+    
+    if "first" not in st.session_state:
+        st.session_state.first = True
 
     if "agent_type" not in st.session_state:
         st.session_state.agent_type = "---"
+
+    if st.session_state.first == True:
+        install_ollama()
+        st.session_state.first = False
 
     st.set_page_config(
         page_title="Resume Chat",
