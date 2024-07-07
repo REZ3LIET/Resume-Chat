@@ -10,18 +10,19 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 
 class ResumeAgent:
-    def __init__(self, resume_path="./resume/resume.pdf"):
+    def __init__(self, agent_type, job_summary):
         llm = Ollama(model="llama2")
         print("Model Loaded")
 
-        retriver = self.data_loader(resume_path)
+        self.job_summary = job_summary
+        retriver = self.data_loader()
         context_prompt = self.contextualize_history()
         history_aware_retriever = create_history_aware_retriever(
             llm,
             retriver,
             context_prompt
         )
-        qa_prompt = self.get_system_prompt()
+        qa_prompt = self.get_system_prompt(agent_type)
         qa_chain = create_stuff_documents_chain(llm, qa_prompt)
         rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
 
@@ -33,27 +34,24 @@ class ResumeAgent:
             history_messages_key="chat_history",
             output_messages_key="answer"
         )
-        print("Ynjoy!!")
+        print("Model Ready!!")
 
     def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
         if session_id not in self.chat_history:
             self.chat_history[session_id] = ChatMessageHistory()
         return self.chat_history[session_id]
     
-    def data_loader(self, path):
+    def data_loader(self, path="./resume/resume.pdf"):
         loader = PyMuPDFLoader(path)
         data = loader.load_and_split()
         embeds = embeddings.OllamaEmbeddings(model='nomic-embed-text')
         vectorstore = FAISS.from_documents(data, embeds)
         retriever = vectorstore.as_retriever()
         return retriever
-    
-    def get_job_summary(self):
-        job_sum = "Enter your job description: \n"
-        return job_sum
 
     def contextualize_history(self):
         ### Contextualize question ###
+        
         contextualize_q_system_prompt = (
             "Given a chat history and the latest user question "
             "which might reference context in the chat history, "
@@ -71,23 +69,39 @@ class ResumeAgent:
 
         return contextualize_q_prompt
 
-    def get_system_prompt(self):
-        system_prompt = (
-            "You are a proficient hiring manager, with vast "
-            "experience in reviewing resumes. You will be given "
-            "a job summary and the user's resume. Your task is to "
-            "help the user make their resume stronger after "
-            "analyzing it. Additionally, answer any of user's queries "
-            "so that they can a construct a better resume. "
-            "\n\n"
-            f"Job Summary: {self.get_job_summary()}"
-            "\n\n"
-            "You will have additional context which can be "
-            "utilized to answer user's queries. "
-            "\n\n"
-            "Context: {context}"
-        )
-
+    def get_system_prompt(self, type):
+        if type == "improve":
+            system_prompt = (
+                "You are a proficient hiring manager, with vast "
+                "experience in reviewing resumes. You will be given "
+                "a job summary and the user's resume. Your task is to "
+                "help the user make their resume stronger after "
+                "analyzing it and giving short summary and bullet "
+                "points for improvement. "
+                "\n\n"
+                f"Job Summary: {self.job_summary}"
+                "\n\n"
+                "You will have additional context which can be "
+                "utilized to answer user's queries. "
+                "\n\n"
+                "Context: {context}"
+            )
+        else:
+            system_prompt = (
+                "You are a proficient hiring manager, with vast "
+                "experience in interviewing candidates. You will be given "
+                "a job summary and the user's resume. Your task is to "
+                "interview the user anaylyze their answers and "
+                "afeter analyzing give constructive feedback. "
+                "Make sure the questions are only related to the user's resume. "
+                "\n\n"
+                f"Job Summary: {self.job_summary}"
+                "\n\n"
+                "You will have additional context which can be "
+                "utilized to answer user's queries. "
+                "\n\n"
+                "Context: {context}"
+            )
         qa_prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             MessagesPlaceholder("chat_history"),
