@@ -1,4 +1,4 @@
-# Resume-Chat | [Blog]()
+# Resume-Chat | [Deploy](https://rzl8-resume-chat.streamlit.app/)
 
 Resum Chat helps in interacting with your resume in 2 modes:
 - Improve Resume:
