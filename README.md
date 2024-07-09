@@ -1,6 +1,6 @@
-# Resume-Chat | [Blog](https://medium.com/@rezeliet/enriching-resume-interview-and-modify-your-resume-with-ollama-and-langchain-09aa462adff6)
+# Resume-Chat | [Blog](https://medium.com/@rezeliet/enriching-resume-interview-and-modify-your-resume-with-ollama-and-langchain-09aa462adff6) | [Streamlit](https://rzl8-resume-chat.streamlit.app/)
 
-Resum Chat helps in interacting with your resume in 2 modes:
+Resume Chat helps in interacting with your resume in 2 modes:
 - Improve Resume:
     In Improve Resume the agent rates your resume and suggests improvement based on the provides job summary.
 - Dummy Interview
@@ -17,16 +17,7 @@ Resum Chat helps in interacting with your resume in 2 modes:
 ```
 pip install -r requirements.txt
 ```
-2. Install Ollama from [Ollama Github](https://github.com/ollama/ollama)
-
-3. Pulling Llama2 for llm
-```
-ollama pull llama2
-```
-
-4. Pulling Embeddings from Ollama
-```
-ollama pull nomic-embed-text
+2. Create your own api_key for Google's Gemini API from [Google AI Studio](https://aistudio.google.com/app/apikey)
 ```
 
 ## Usage
