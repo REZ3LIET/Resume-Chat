@@ -54,26 +54,28 @@ def main():
     )
 
     st.write("# Welcome to Resume-Chat! 👋")
+    api_key = st.sidebar.text_input('Gemini API Key', type='password')
+    if api_key == "":
+        st.warning("Please set the API KEY in sidebar.")
     st.session_state.job_desc = st.text_area("Enter you job description", placeholder="Comapany's Requirements...")
-
     col1, col2 = st.columns(2)
 
     with col1:
+        st.session_state.file_status = upload_file()
+
+    with col2:
         chat_type = st.selectbox("Choose Preferred Chat Option", ["---", "Improve Resume", "Dummy Interview"])
         if st.session_state.agent_type != chat_type:
             st.session_state.messages = []
             st.session_state.agent_type = chat_type
             if chat_type == "Improve Resume":
-                st.session_state.agent = ResumeAgent("improve", st.session_state.job_desc)
+                st.session_state.agent = ResumeAgent(api_key, "improve", st.session_state.job_desc)
             elif chat_type == "Dummy Interview":
-                st.session_state.agent = ResumeAgent("interview", st.session_state.job_desc)
+                st.session_state.agent = ResumeAgent(api_key, "interview", st.session_state.job_desc)
             else:
                 st.session_state.agent = None
 
         st.button("Start Chat", on_click=check_start_state)
-
-    with col2:
-        st.session_state.file_status = upload_file()
 
     if st.session_state.start_chat:
         # Display chat messages from history on app rerun

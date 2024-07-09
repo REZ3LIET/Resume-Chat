@@ -1,6 +1,8 @@
+import os
+import google.generativeai as genai
 from langchain_community import embeddings
-from langchain_community.llms import Ollama
 from langchain_community.vectorstores import FAISS
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -10,8 +12,9 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 
 class ResumeAgent:
-    def __init__(self, agent_type, job_summary):
-        llm = Ollama(model="llama2")
+    def __init__(self, api_key, agent_type, job_summary):
+        os.environ["GOOGLE_API_KEY"] = api_key
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
         print("Model Loaded")
 
         self.job_summary = job_summary
@@ -105,6 +108,7 @@ class ResumeAgent:
                 "\n\n"
                 "Context: {context}"
             )
+        print(f"Job Summary: {self.job_summary}")
         qa_prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             MessagesPlaceholder("chat_history"),
