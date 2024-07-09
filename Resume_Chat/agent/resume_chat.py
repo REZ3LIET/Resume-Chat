@@ -14,6 +14,7 @@ from langchain.chains import create_history_aware_retriever, create_retrieval_ch
 class ResumeAgent:
     def __init__(self, api_key, agent_type, job_summary):
         os.environ["GOOGLE_API_KEY"] = api_key
+        print(f"API_KEY: {api_key}")
         llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
         print("Model Loaded")
 
