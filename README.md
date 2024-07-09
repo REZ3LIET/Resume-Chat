@@ -1,4 +1,4 @@
-# Resume-Chat | [Deploy](https://rzl8-resume-chat.streamlit.app/)
+# Resume-Chat | [Blog](https://medium.com/@rezeliet/enriching-resume-interview-and-modify-your-resume-with-ollama-and-langchain-09aa462adff6)
 
 Resum Chat helps in interacting with your resume in 2 modes:
 - Improve Resume:
