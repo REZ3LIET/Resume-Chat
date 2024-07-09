@@ -1,8 +1,6 @@
 import os
-import google.generativeai as genai
 from langchain_community import embeddings
 from langchain_community.vectorstores import FAISS
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -10,11 +8,11 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_history_aware_retriever, create_retrieval_chain
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
 class ResumeAgent:
     def __init__(self, api_key, agent_type, job_summary):
         os.environ["GOOGLE_API_KEY"] = api_key
-        print(f"API_KEY: {api_key}")
         llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
         print("Model Loaded")
 
@@ -48,7 +46,7 @@ class ResumeAgent:
     def data_loader(self, path="./Resume_Chat/resume/resume.pdf"):
         loader = PyMuPDFLoader(path)
         data = loader.load_and_split()
-        embeds = embeddings.OllamaEmbeddings(model='nomic-embed-text')
+        embeds = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
         vectorstore = FAISS.from_documents(data, embeds)
         retriever = vectorstore.as_retriever()
         return retriever
@@ -121,8 +119,7 @@ class ResumeAgent:
     def agent_chat(self, usr_prompt):
         response = self.chat_model.invoke(
             {
-                "input": usr_prompt,
-                # "job_summary": "Accountant"
+                "input": usr_prompt
             },
                 config={
                     "configurable": {"session_id": "acc_setup"}
