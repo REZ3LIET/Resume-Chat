@@ -1,6 +1,8 @@
 faiss-cpu
-langchain==0.2.6
-langchain-community==0.2.6
-langchain-core==0.2.11
-PyMuPDF==1.24.7
-streamlit==1.36.0
+langchain==0.3.19
+langchain-community==0.3.18
+langchain-core==0.3.40
+langchain-ollama==0.2.3
+langgraph==0.3.2
+PyMuPDF==1.25.3
+streamlit==1.42.2
