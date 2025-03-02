@@ -1,75 +1,106 @@
-import os
-from langchain_community import embeddings
+from langchain_ollama import ChatOllama
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyMuPDFLoader
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_ollama import OllamaEmbeddings
+from langchain_core.tools import tool
+from langchain_core.messages import SystemMessage
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, MessagesState, StateGraph
+from langgraph.prebuilt import ToolNode, tools_condition
 
 class ResumeAgent:
-    def __init__(self, api_key, agent_type, job_summary):
-        os.environ["GOOGLE_API_KEY"] = api_key
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+    def __init__(self, job_summary=""):
+        self.llm = ChatOllama(model="qwen2.5-coder:7b")
         print("Model Loaded")
 
         self.job_summary = job_summary
-        retriver = self.data_loader()
-        context_prompt = self.contextualize_history()
-        history_aware_retriever = create_history_aware_retriever(
-            llm,
-            retriver,
-            context_prompt
-        )
-        qa_prompt = self.get_system_prompt(agent_type)
-        qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-        rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
-
-        self.chat_history = {}
-        self.chat_model = RunnableWithMessageHistory(
-            rag_chain,
-            self.get_session_history,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-            output_messages_key="answer"
-        )
+        self.vector_store = self.data_loader()
+        self.chat_model = self.build_graph()
         print("Model Ready!!")
-
-    def get_session_history(self, session_id: str) -> BaseChatMessageHistory:
-        if session_id not in self.chat_history:
-            self.chat_history[session_id] = ChatMessageHistory()
-        return self.chat_history[session_id]
     
-    def data_loader(self, path="./Resume_Chat/resume/resume.pdf"):
+    def data_loader(self, path="./Resume_Chat/resume/sample_resume.pdf"):
+        # TODO(REZ3LIET): ChunkRAG
         loader = PyMuPDFLoader(path)
         data = loader.load_and_split()
-        embeds = GoogleGenerativeAIEmbeddings(model="models/text-embedding-004")
+        embeds = OllamaEmbeddings(model="qwen2.5-coder:7b")
         vectorstore = FAISS.from_documents(data, embeds)
-        retriever = vectorstore.as_retriever()
-        return retriever
-
-    def contextualize_history(self):
-        ### Contextualize question ###
-        
-        contextualize_q_system_prompt = (
-            "Given a chat history and the latest user question "
-            "which might reference context in the chat history, "
-            "formulate a standalone question which can be understood "
-            "without the chat history. Do NOT answer the question, "
-            "just reformulate it if needed and otherwise return it as is."
+        return vectorstore
+    
+    @tool(response_format="content_and_artifact")
+    def retrieve(self, query: str):
+        """Retrieve information related to a string query."""
+        retrieved_docs = self.vector_store.similarity_search(query, k=2)
+        serialized = "\n\n".join(
+            (f"Source: {doc.metadata}\n" f"Content: {doc.page_content}")
+            for doc in retrieved_docs
         )
-        contextualize_q_prompt = ChatPromptTemplate.from_messages(
-            [
-                ("system", contextualize_q_system_prompt),
-                MessagesPlaceholder("chat_history"),
-                ("human", "{input}"),
-            ]
-        )
+        return serialized, retrieved_docs
 
-        return contextualize_q_prompt
+    def query_or_respond(self, state: MessagesState):
+        """Generate tool call for retrieval or respond."""
+        # Step 1: Generate an AIMessage that may include a tool-call to be sent.
+        llm_with_tools = self.llm.bind_tools([self.retrieve])
+        response = llm_with_tools.invoke(state["messages"])
+        # MessagesState appends messages to state instead of overwriting
+        return {"messages": [response]}
+
+    def generate(self, state: MessagesState):
+        """Generate answer."""
+        # Step 3: Generate a response using the retrieved content.
+        # Get generated ToolMessages
+        recent_tool_messages = []
+        for message in reversed(state["messages"]):
+            if message.type == "tool":
+                recent_tool_messages.append(message)
+            else:
+                break
+        tool_messages = recent_tool_messages[::-1]
+
+        # Format into prompt
+        docs_content = "\n\n".join(doc.content for doc in tool_messages)
+        system_message_content = (
+            "You are an assistant for question-answering tasks. "
+            "Use the following pieces of retrieved context to answer "
+            "the question. If you don't know the answer, say that you "
+            "don't know. Use three sentences maximum and keep the "
+            "answer concise."
+            "\n\n"
+            f"{docs_content}"
+        )
+        conversation_messages = [
+            message
+            for message in state["messages"]
+            if message.type in ("human", "system")
+            or (message.type == "ai" and not message.tool_calls)
+        ]
+        prompt = [SystemMessage(system_message_content)] + conversation_messages
+
+        # Run
+        response = self.llm.invoke(prompt)
+        return {"messages": [response]}
+
+    def build_graph(self):
+        # Build graph
+        tools = ToolNode([self.retrieve])
+        graph_builder = StateGraph(MessagesState)
+
+        graph_builder.add_node(self.query_or_respond)
+        graph_builder.add_node(tools)
+        graph_builder.add_node(self.generate)
+
+        graph_builder.set_entry_point("query_or_respond")
+        graph_builder.add_conditional_edges(
+            "query_or_respond",
+            tools_condition,
+            {END: END, "tools": "tools"},
+        )
+        graph_builder.add_edge("tools", "generate")
+        graph_builder.add_edge("generate", END)
+
+        memory = MemorySaver()
+        graph = graph_builder.compile(checkpointer=memory)
+        return graph
 
     def get_system_prompt(self, type):
         if type == "improve":
@@ -117,15 +148,15 @@ class ResumeAgent:
         return qa_prompt
 
     def agent_chat(self, usr_prompt):
-        response = self.chat_model.invoke(
-            {
-                "input": usr_prompt
-            },
-                config={
-                    "configurable": {"session_id": "acc_setup"}
-                }
-        )["answer"]
-        return response
+        config = {"configurable": {"thread_id": "abc123"}}
+
+        for step in self.chat_model.stream(
+            {"messages": [{"role": "user", "content": usr_prompt}]},
+            stream_mode="values",
+            config=config,
+        ):
+            step["messages"][-1].pretty_print()
+        return True
 
 def main():
     chat_agent = ResumeAgent()
